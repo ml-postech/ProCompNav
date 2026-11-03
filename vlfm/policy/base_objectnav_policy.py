@@ -811,8 +811,9 @@ class BaseObjectNavPolicy(BasePolicy):
                         text_goal=self._text_goal,
                     )
                     stage2_method = str(self._object_map.pbp_config.get("stage2_method", "procompnav")).strip().lower()
-                    if stage2_method == "pim":
+                    if stage2_method in ("pim", "binary_pim"):
                         # Pooled Independent Matching baseline: same candidate pool, AIUTA-style independent matching.
+                        # binary_pim asks a yes/no attribute-value question per candidate instead of an open-ended one.
                         selected_obj_id, pbp_status = self._object_map.run_aiuta_stage2(**stage2_args)
                     else:
                         selected_obj_id, pbp_status = self._object_map.run_property_based_partitioning(**stage2_args)

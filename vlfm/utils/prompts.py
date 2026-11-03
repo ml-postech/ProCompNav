@@ -171,3 +171,44 @@ questions:
 YAML_END # must be present to get the information back
 
 Provide your reasoning step-by-step for the similarity score and questions, after the YAML_END tag."""
+
+# Binary Pooled Independent Matching: same as LLM_SIMILARITY_SCORE_AND_QUESTION_TO_TARGET, except that
+# "2. Question Generation" asks for one attribute-value property to verify with a yes/no question.
+LLM_SIMILARITY_SCORE_AND_BINARY_PROPERTY_TO_TARGET = """
+You are an intelligent agent equipped with an RGB sensor, object detector, and Visual Question Answering (VQA) model.
+Your goal is to identify a target {target_object} based on a scene description and prior knowledge of the target.
+
+Scenario:
+The object detector has identified a scene containing a {target_object}, and the VQA model has provided the following description:
+
+<START_OF_DESCRIPTION>
+{distractor_object_description}
+<END_OF_DESCRIPTION>
+
+Target object information: 
+Based on previous interactions, you know the target picture has the following characteristics:
+<START_TARGET_PICTURE_FACTS>
+{facts_about_the_target_picture}
+<END_TARGET_PICTURE_FACTS> 
+
+Task:
+1. Similarity analysis.
+Analyze how closely the detected scene description aligns with the known facts about the target {target_object}. Provide a similarity score between 0 and 10, where:
+- 0 = The detected {target_object} is not the target object.
+- 10 = The detected {target_object} is definitely the target object.
+- If no information about the target is available, the score should be -1.
+
+2. Question Generation:
+- The question is for the target object, not the detected one.
+- Propose exactly one attribute-value pair to verify with a yes/no question about the target object, chosen to maximize information gain for identifying the target {target_object}.
+- Do not ask speculative or irrelevant questions 
+- The property must be one that the detected {target_object} has according to the description above (its visible appearance or nearby surrounding objects), so that the user's yes/no answer helps confirm or refute whether the detected {target_object} is the target.
+- Write the property as a short phrase of no more than 10 words (e.g., "made of dark wood", "next to a lamp").
+
+Ensure your response follows the format below:
+YAML_START # must be present to get the information back
+similarity_score: <similarity score>
+property: <attribute-value phrase>
+YAML_END # must be present to get the information back
+
+Provide your reasoning step-by-step for the similarity score and property, after the YAML_END tag."""

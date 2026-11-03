@@ -248,7 +248,7 @@ With fewer GPUs, run the remaining invocations (the remaining `--shard0/--shard1
 | `--instance_grouping_method` | `dense_average_image_text` | How the current pool is split into a core set and a remainder |
 | `--min_num_instances_for_pbp_trigger` | auto (CoIN: 5, TextNav: 3) | Candidate-pool size N_min that starts the Recursive Comparison Stage |
 | `--trigger_step` | auto (CoIN: 400, TextNav: 600) | Step at which the Recursive Comparison Stage starts if the pool has not reached N_min |
-| `--stage2_method` | `procompnav` | Disambiguation after pool construction: `procompnav` (comparative judgment) or `pim` (Pooled Independent Matching baseline) |
+| `--stage2_method` | `procompnav` | Disambiguation after pool construction: `procompnav` (comparative judgment), `pim` (Pooled Independent Matching baseline), or `binary_pim` (Binary PIM, this branch) |
 
 ### Ablation options
 
@@ -276,6 +276,17 @@ The ablations in the appendix section "Question Format and Candidate Comparison"
 | `ablation/binary-pim` | `binary_pim` | Binary PIM: PIM with one yes/no attribute-value question per candidate |
 | `ablation/no-candidate-info` | `no_candidate_info` | "No candidate information": binary questions chosen from the category and previous answers only |
 | `ablation/single-candidate` | `single_candidate` | "Single candidate": binary questions chosen from one candidate description at a time |
+
+### Binary PIM (this branch)
+
+Binary PIM is the question-format ablation in the appendix section "Question Format and Candidate Comparison". It keeps everything in Pooled Independent Matching but replaces the open-ended question with a yes/no question. For each collected candidate, the LLM sees only that candidate's description and the accumulated target facts and proposes one attribute-value property (for example, "made of dark wood"). The same yes/no user simulator as ProCompNav answers it, and the answer is added to the target facts. Phase 2 rescoring and the LLM tie-break are the same as in PIM. As in PIM, there is no four-question limit.
+
+```bash
+python run_experiments.py --task_type coin --split val_seen \
+    --vllm_gpu 0 --vision_gpu 1 \
+    --shard_size 70 --shard0 0 --shard1 1 \
+    --stage2_method binary_pim --eval_folder_name binary_pim_coin_val_seen
+```
 
 ---
 

@@ -363,7 +363,7 @@ class PBPRuntimeConfig:
     pbp_refinement_thres: float = 0.5
     instance_grouping_method: str = "dense_half_image_text"
     NLI_kmeans_modal: str = "text"
-    stage2_method: str = "procompnav"  # "procompnav" (comparative judgment) or "pim" (Pooled Independent Matching)
+    stage2_method: str = "procompnav"  # "procompnav" (comparative judgment), "pim" (Pooled Independent Matching), or "binary_pim"
 
 
 @dataclass

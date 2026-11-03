@@ -1224,6 +1224,42 @@ class ObjectPointCloudMap:
                 if score >= THRESHOLD_STOP_SCORE:
                     selected_group_id = group_id
                     break
+            elif str(self.pbp_config.get("stage2_method", "procompnav")).strip().lower() == "binary_pim":
+                # Binary Pooled Independent Matching, Phase 1: ask exactly 1 yes/no question per candidate,
+                # about one attribute-value property chosen from this candidate's description alone
+                # (no other candidates are shown). Answer comes from the same yes/no user simulator as
+                # ProCompNav, which also counts NQ and RL. Facts are accumulated as in open-ended PIM.
+                _, property_text = self.llm_agent_brain.get_similarity_score_and_binary_property_for_target_object(
+                    target_object=target_for_llm, detected_object_description=distractor_description,
+                )
+                # The score returned here is computed against partial facts; intentionally discarded.
+                nq_before = self.vlm_oracle.ask_to_human_episode_counter.get(ep_id, 0)
+                target_has = self.pbp._user_simulator_has_property(
+                    target_image=target_image, category=category, property_text=property_text, ep_id=ep_id,
+                )
+                answered = self.vlm_oracle.ask_to_human_episode_counter.get(ep_id, 0) > nq_before
+                question = f"Does this [{category}] have the following property? PROPERTY: [{property_text}]"
+                answer = "Yes" if target_has else "No"
+                oracle_answers = [{"question": question, "answer": answer}]
+                self._aiuta_episode_questions_used += 1
+                self.cnt_questions_asked_to_human += 1
+                qa_pairs = [{"question": question, "answer": answer, "property": property_text, "user_answered": answered}]
+                candidate_log["oracle_qa"].append(qa_pairs)
+                print(Fore.MAGENTA + f"[AIUTA_S2_BINARY] Q: {question}")
+                print(Fore.MAGENTA + f"[AIUTA_S2_BINARY] A: {answer} (user_answered={answered})")
+                self.llm_agent_brain.updates_known_facts_about_target_object_given_oracle_answers(
+                    target_object=target_for_llm, oracle_questions_answers=oracle_answers, read_facts_line=True,
+                )
+                print(Fore.CYAN + f"[AIUTA_S2_BINARY] Updated facts: {self.llm_agent_brain.target_object_informations}")
+                candidate_log["facts_history"].append(self.llm_agent_brain.target_object_informations)
+                self.vlm_oracle.questions_for_target_object_list[ep_id].append([question])
+                self.vlm_oracle.answers_for_target_object_list[ep_id].append(oracle_answers)
+                self.vlm_oracle.facts_for_target_object_list[ep_id].append(self.llm_agent_brain.target_object_informations)
+                candidate_records.append({
+                    "group_id": group_id,
+                    "refined_description": distractor_description,
+                    "candidate_log": candidate_log,
+                })
             else:
                 # coin path Phase 1: ask exactly 1 oracle question per candidate, accumulate facts.
                 # Defer scoring to Phase 2 so all candidates are judged against the same final fact set.

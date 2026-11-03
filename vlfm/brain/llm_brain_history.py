@@ -257,6 +257,36 @@ class LLM_History:
 
             raise e
 
+    # max retry 10 times, wait 10 seconds between each retry
+    @retry(stop_max_attempt_number=10, wait_fixed=10000)
+    def get_similarity_score_and_binary_property_for_target_object(self, target_object: str, detected_object_description: str):
+        """Binary Pooled Independent Matching: like get_similarity_score_and_question_for_target_object,
+        but returns one attribute-value property to ask the user as a yes/no question."""
+        prompt = prompts.LLM_SIMILARITY_SCORE_AND_BINARY_PROPERTY_TO_TARGET.format(
+            target_object=target_object,
+            distractor_object_description=detected_object_description,
+            facts_about_the_target_picture=self.target_object_informations or "No information available",
+        )
+        response = self.LLM_CLIENT.ask(prompt=prompt)
+        print(Fore.BLUE + f"[INFO: LLM] Get similarity score and binary property for the user \n {response}")
+        print("---" * 5)
+        try:
+            yaml_data = response.split("YAML_START")[1].split("YAML_END")[0].strip()
+            score_match = re.search(r"^\s*similarity_score:[ \t]*(-?\d+)", yaml_data, re.MULTILINE)
+            property_match = re.search(r"^\s*property:[ \t]*(.*)$", yaml_data, re.MULTILINE)
+            similarity_score = int(score_match.group(1)) if score_match else -1  # discarded by the caller
+            property_text = property_match.group(1).strip().strip('"').strip() if property_match else ""
+            assert property_text, "empty property"
+
+            return similarity_score, property_text
+        except Exception as e:
+            print(e)
+            logging.exception(response)
+            logging.info("This was the prompt")
+            logging.exception(prompt)
+
+            raise e
+
     def pick_candidate_index_by_facts(self, facts: str, candidate_descriptions: List[str]):
         """Tie-break: pick which 1-based candidate index best matches the accumulated user facts.
 
@@ -287,7 +317,7 @@ class LLM_History:
     # max retry 10 times, wait 10 seconds between each retry
     @retry(stop_max_attempt_number=10, wait_fixed=10000)
     def updates_known_facts_about_target_object_given_oracle_answers(
-        self, target_object: str, oracle_questions_answers: List[dict]
+        self, target_object: str, oracle_questions_answers: List[dict], read_facts_line: bool = False
     ):
         questions_answer_string = ""
         for item in oracle_questions_answers:
@@ -304,9 +334,18 @@ class LLM_History:
         print(Fore.BLUE + f"[INFO: LLM] Updating know facts using answers from the user. \n {response}")
         try:
             yaml_data = response.split("YAML_START")[1].split("YAML_END")[0].strip()
-            parsed_yaml = yaml.safe_load(yaml_data)
-
-            new_facts = parsed_yaml["facts"]
+            if read_facts_line:
+                # Binary PIM: read the text after "facts:" as-is, so a value containing ':'
+                # (e.g. "has a white cup on top: false") does not break YAML parsing.
+                facts_match = re.search(r"^\s*facts:[ \t]*(.*)$", yaml_data, re.MULTILINE)
+                new_facts = facts_match.group(1).strip() if facts_match else ""
+                assert new_facts, "empty facts line"
+                # The facts are pasted into later YAML-output prompts (self-questioner etc.), where a copied
+                # ':' breaks parsing again. Replace it: "on top: false" -> "on top = false".
+                new_facts = re.sub(r"\s*:\s*", " = ", new_facts)
+            else:
+                parsed_yaml = yaml.safe_load(yaml_data)
+                new_facts = parsed_yaml["facts"]
             self.target_object_informations = new_facts
 
             return new_facts
