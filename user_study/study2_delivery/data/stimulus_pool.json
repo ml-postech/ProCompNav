@@ -1,0 +1,79 @@
+{
+  "meta": {
+    "n_eps": 2
+  },
+  "episodes": [
+    {
+      "ep_id": 84,
+      "category": "cabinet",
+      "category_ko": "수납장",
+      "target_instance_id": "cabinet_402",
+      "n_binary_q": 3,
+      "n_open_q": 7,
+      "binary_qs": [
+        {
+          "prop": "black stove underneath",
+          "gt_answer": "No",
+          "prop_ko": "밑에 검은 가스레인지가 있나요?"
+        },
+        {
+          "prop": "under ceiling lighting",
+          "gt_answer": "No",
+          "prop_ko": "천장 조명 아래인가요?"
+        },
+        {
+          "prop": "trash can nearby",
+          "gt_answer": "No",
+          "prop_ko": "근처에 쓰레기통이 있나요?"
+        }
+      ],
+      "open_qs": [
+        "What is the color of the target cabinet?",
+        "Does the cabinet in the scene have intricate carvings in a light wood tone, as seen in the target picture?",
+        "What is the exact color and finish of the cabinet's wood, and does it feature any carvings or geometric lattice patterns with circular or diamond motifs?",
+        "Does the cabinet feature a geometric lattice pattern with central circular motifs surrounded by diamond-like or quatrefoil elements on its doors?",
+        "Does the cabinet feature intricate carvings with a geometric lattice pattern that includes central circular motifs surrounded by diamond-like or quatrefoil elements on all visible drawer fronts and doors?",
+        "Does the cabinet have intricate handcrafted carvings with a geometric lattice pattern featuring central circular motifs surrounded by diamond-like or quatrefoil elements, visible on all drawer fronts and doors?",
+        "Does the cabinet have intricate handcrafted carvings with a geometric lattice pattern including central circular motifs surrounded by diamond-like or quatrefoil elements, visible on all drawer fronts and doors?"
+      ],
+      "target_img": "target_images/ep84_target.png",
+      "open_qs_ko": [
+        "대상 수납장의 색깔이 무엇인가요?",
+        "장면 속 캐비닛이 대상 사진처럼 밝은 나무 톤에 정교한 조각이 새겨져 있나요?",
+        "캐비닛 원목의 정확한 색상과 마감 처리는 어떻게 되나요? 그리고 혹시 원형이나 다이아몬드 형태의 기하학적 격자무늬 또는 조각 장식이 있나요?",
+        "캐비닛 문에 중앙의 원형 모티브를 다이아몬드나 쿼트레포일 문양이 둘러싸고 있는 기하학적 격자무늬가 있나요?",
+        "서랍 앞면과 문 전체에 기하학적 격자무늬와 그 중심의 원형 문양, 그리고 이를 둘러싼 다이아몬드나 꽃 모양의 정교한 조각이 새겨져 있나요?",
+        "서랍 앞면과 문 전체에 기하학적인 격자무늬와 그 중심의 원형 모티브, 그리고 이를 둘러싼 다이아몬드나 십자꽃 모양의 정교한 수공예 조각이 새겨져 있나요?",
+        "수납장의 모든 서랍 앞면과 문에 기하학적 격자무늬와 그 중앙의 원형 모티브, 그리고 이를 둘러싼 다이아몬드나 쿼트레포일 형태의 정교한 수공예 조각이 새겨져 있나요?"
+      ]
+    },
+    {
+      "ep_id": 8,
+      "category": "cabinet",
+      "category_ko": "수납장",
+      "target_instance_id": "cabinet_220",
+      "n_binary_q": 3,
+      "n_open_q": 0,
+      "binary_qs": [
+        {
+          "prop": "dark brown finish",
+          "gt_answer": "Yes",
+          "prop_ko": "진한 갈색인가요?"
+        },
+        {
+          "prop": "flat top surface",
+          "gt_answer": "Yes",
+          "prop_ko": "윗면이 평평한가요?"
+        },
+        {
+          "prop": "next to large flat-screen tv",
+          "gt_answer": "No",
+          "prop_ko": "대형 TV 옆인가요?"
+        }
+      ],
+      "open_qs": [],
+      "target_img": "target_images/ep8_target.png",
+      "open_qs_ko": []
+    }
+  ]
+}

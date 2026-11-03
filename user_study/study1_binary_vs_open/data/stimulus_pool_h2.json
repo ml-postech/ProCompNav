@@ -1,0 +1,201 @@
+{
+  "meta": {
+    "n_eps": 5
+  },
+  "episodes": [
+    {
+      "ep_id": 478,
+      "category": "cabinet",
+      "category_ko": "수납장",
+      "target_instance_id": "cabinet_238",
+      "n_binary_q": 3,
+      "n_open_q": 6,
+      "binary_qs": [
+        {
+          "prop": "wooden frame",
+          "gt_answer": "No",
+          "prop_ko": "나무 액자인가요?"
+        },
+        {
+          "prop": "curved top",
+          "gt_answer": "No",
+          "prop_ko": "윗부분이 굽었나요?"
+        },
+        {
+          "prop": "white rectangular cabinet",
+          "gt_answer": "Yes",
+          "prop_ko": "하얀 사각 수납장인가요?"
+        }
+      ],
+      "open_qs": [
+        "What is the color of the trim on the target cabinet?",
+        "Does the cabinet have wooden trim on its top and bottom edges?",
+        "Is there painter's tape visible on the edges or surface of the cabinet?",
+        "Is there any white trim visible on the top and bottom edges of the cabinet, and is painter's tape present along the top edge where it meets the wall or near the floor?",
+        "Does the cabinet have white trim on its top and bottom edges, and is painter’s tape visible along the top edge where it meets the wall and near the bottom edge?",
+        "Does the cabinet have white trim on both its top and bottom edges, and is painter’s tape visible along the top and near the bottom edge?"
+      ],
+      "open_qs_ko": [
+        "대상 수납장 테두리 색상이 무엇인가요?",
+        "캐비닛 상단과 하단 테두리에 나무 장식이 있나요?",
+        "수납장 모서리나 표면에 마스킹 테이프가 보이나요?",
+        "캐비닛 상단과 하단 가장자리에 흰색 테두리가 보이나요? 그리고 벽과 맞닿은 상단이나 바닥 근처에 마스킹 테이프가 붙어 있나요?",
+        "수납장 상단과 하단 테두리가 흰색이고, 벽과 맞닿은 상단과 하단 부근에 마스킹 테이프가 붙어 있나요?",
+        "캐비닛 상단과 하단 테두리에 흰색 장식무늬가 있고, 상단과 하단 근처에 마스킹 테이프가 붙어 있나요?"
+      ],
+      "target_img": "target_images_h2/ep478_target.png"
+    },
+    {
+      "ep_id": 131,
+      "category": "bed",
+      "category_ko": "침대",
+      "target_instance_id": "bed_14",
+      "n_binary_q": 2,
+      "n_open_q": 5,
+      "binary_qs": [
+        {
+          "prop": "black nightstand next to bed",
+          "gt_answer": "Yes",
+          "prop_ko": "침대 옆 검은색 협탁인가요?"
+        },
+        {
+          "prop": "blue comforter covering bed",
+          "gt_answer": "No",
+          "prop_ko": "파란 이불인가요?"
+        }
+      ],
+      "open_qs": [
+        "What is the color and material of the frame of the target bed?",
+        "What color is the wooden frame of the target bed, and does it have a whitewashed or weathered appearance?",
+        "What is the color and finish of the wooden frame of the target bed?",
+        "What color is the wooden frame of the target bed, and does it show visible wood grain or a whitewashed finish?",
+        "Does the bed have a light off-white/cream wooden frame with a whitewashed or weathered appearance, showing visible wood grain and a distressed, rustic finish?"
+      ],
+      "open_qs_ko": [
+        "대상 침대 프레임의 색상과 재질은 무엇인가요?",
+        "대상 침대의 나무 프레임은 어떤 색상이며, 화이트워시 처리가 되었거나 풍화된 듯한 느낌이 있나요?",
+        "대상 침대 원목 프레임의 색상과 마감 처리는 어떻게 되나요?",
+        "해당 침대의 나무 프레임은 어떤 색상인가요? 그리고 나무 무늬가 그대로 보이나요, 아니면 화이트워시 마감인가요?",
+        "침대 프레임이 밝은 오프화이트나 크림색 나무 재질이면서, 나뭇결이 보이고 낡은 듯한 느낌을 주는 화이트워시 또는 빈티지한 마감의 루스틱한 스타일인가요?"
+      ],
+      "target_img": "target_images_h2/ep131_target.png"
+    },
+    {
+      "ep_id": 1470,
+      "category": "table",
+      "category_ko": "탁자",
+      "target_instance_id": "table_36",
+      "n_binary_q": 3,
+      "n_open_q": 6,
+      "binary_qs": [
+        {
+          "prop": "chair next to table",
+          "gt_answer": "No",
+          "prop_ko": "식탁 옆에 의자 있나요?"
+        },
+        {
+          "prop": "rectangular shape",
+          "gt_answer": "Yes",
+          "prop_ko": "직사각형인가요?"
+        },
+        {
+          "prop": "white lampshade nearby",
+          "gt_answer": "No",
+          "prop_ko": "근처에 흰색 전등갓 있나요?"
+        }
+      ],
+      "open_qs": [
+        "What is the color and shape of the target table?",
+        "Is the table’s surface finish smooth and uniformly dark brown, or does it show signs of wear or paint peeling?",
+        "What is the color of the frame of the target table?",
+        "Does the table have visible signs of wear, such as scratches, scuffs, or paint peeling that reveals lighter wood underneath?",
+        "Does the table have visible signs of wear, such as paint peeling or chipping, revealing lighter wood underneath, and does it exhibit a textured, distressed appearance with uneven edges?",
+        "Does the table show visible signs of wear such as paint peeling, chipping, or uneven edges revealing lighter wood underneath?"
+      ],
+      "open_qs_ko": [
+        "대상 테이블의 색상과 모양은 어떻게 되나요?",
+        "테이블 표면이 매끄럽고 균일한 진갈색인가요, 아니면 마모되거나 페인트가 벗겨진 부분이 있나요?",
+        "대상 테이블 프레임의 색상이 무엇인가요?",
+        "테이블에 긁힘이나 마모, 혹은 페인트가 벗겨져 안쪽의 밝은 나무색이 드러나는 것과 같은 눈에 띄는 사용감이 있나요?",
+        "테이블에 페인트가 벗겨지거나 까져서 안쪽의 밝은 나무색이 드러나는 등 눈에 띄는 사용감이 있나요? 그리고 표면이 거칠고 모서리가 고르지 않은 빈티지한 느낌이 드나요?",
+        "테이블에 페인트 벗겨짐, 찍힘, 혹은 모서리 부분이 마모되어 안쪽의 밝은 나무색이 드러나는 등의 사용감이 눈에 띄게 있나요?"
+      ],
+      "target_img": "target_images_h2/ep1470_target.png"
+    },
+    {
+      "ep_id": 539,
+      "category": "desk",
+      "category_ko": "책상",
+      "target_instance_id": "desk_623",
+      "n_binary_q": 3,
+      "n_open_q": 5,
+      "binary_qs": [
+        {
+          "prop": "has a picture frame on top",
+          "gt_answer": "No",
+          "prop_ko": "액자 위에 있나요?"
+        },
+        {
+          "prop": "rectangular top",
+          "gt_answer": "Yes",
+          "prop_ko": "윗면이 사각형인가요?"
+        },
+        {
+          "prop": "ornate carved legs",
+          "gt_answer": "No",
+          "prop_ko": "다리가 화려한가요?"
+        }
+      ],
+      "open_qs": [
+        "What is the color and material of the frame of the picture hanging above the desk?",
+        "What is the color of the frame of the picture hanging above the target desk?",
+        "What is the color of the frame of the picture hanging above the target desk?",
+        "What is the color of the frame of the picture hanging above the target desk?",
+        "What is the color of the frame of the picture hanging above the desk?"
+      ],
+      "open_qs_ko": [
+        "책상 위에 걸려 있는 액자 프레임의 색상과 재질이 어떻게 되나요?",
+        "대상 책상 위에 걸려 있는 액자 프레임의 색깔은 무엇인가요?",
+        "대상 책상 위에 걸려 있는 액자 프레임 색상이 무엇인가요?",
+        "대상 책상 위에 걸려 있는 액자 프레임 색상이 무엇인가요?",
+        "책상 위에 걸려 있는 액자 테두리 색깔이 무엇인가요?"
+      ],
+      "target_img": "target_images_h2/ep539_target.png"
+    },
+    {
+      "ep_id": 1077,
+      "category": "chair",
+      "category_ko": "의자",
+      "target_instance_id": "chair_765",
+      "n_binary_q": 2,
+      "n_open_q": 5,
+      "binary_qs": [
+        {
+          "prop": "blue color",
+          "gt_answer": "Yes",
+          "prop_ko": "파란색인가요?"
+        },
+        {
+          "prop": "patterned upholstery surface",
+          "gt_answer": "Yes",
+          "prop_ko": "무늬 있는 천인가요?"
+        }
+      ],
+      "open_qs": [
+        "What is the color of the target chair?",
+        "What color is the target chair, and does it have any pattern on it?",
+        "Does the chair have a starburst pattern on its upholstery?",
+        "Does the chair have dark wood legs and a repeating geometric starburst pattern across the entire seating area and backrest?",
+        "What is the exact color of the fabric on the target chair, and does it feature a white or light-colored geometric starburst pattern?"
+      ],
+      "open_qs_ko": [
+        "대상 의자의 색깔이 무엇인가요?",
+        "대상 의자는 무슨 색이고, 혹시 무늬가 있나요?",
+        "의자 천에 별 모양 패턴이 있나요?",
+        "의자 다리가 어두운 나무색이고, 등받이와 시트 전체에 기하학적인 별 모양 패턴이 반복적으로 들어가 있나요?",
+        "대상 의자의 정확한 원단 색상은 무엇인가요? 그리고 흰색이나 밝은색의 기하학적 별 모양 패턴이 들어가 있나요?"
+      ],
+      "target_img": "target_images_h2/ep1077_target.png"
+    }
+  ]
+}
