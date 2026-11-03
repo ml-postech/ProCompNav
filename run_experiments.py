@@ -323,9 +323,10 @@ def build_parser() -> argparse.ArgumentParser:
                    help="Embedding used when --instance_grouping_method=kmeans "
                         "(image_text: text and image embeddings concatenated, as in the paper; "
                         "text: candidate descriptions, all-MiniLM-L6-v2; image: DINOv2)")
-    p.add_argument("--stage2_method", type=str, default="procompnav", choices=["procompnav", "pim"],
-                   help="Disambiguation after pool construction: procompnav (comparative judgment) "
-                        "or pim (Pooled Independent Matching baseline)")
+    p.add_argument("--stage2_method", type=str, default="procompnav", choices=["procompnav", "pim", "single_candidate"],
+                   help="Disambiguation after pool construction: procompnav (comparative judgment), "
+                        "pim (Pooled Independent Matching baseline), or single_candidate "
+                        "(appendix ablation 'Single candidate')")
     p.add_argument("--dataset_type", type=str, default="InstanceNavTextGoalDataset")
 
     # Logging knobs ----------------------------------------------------------
