@@ -3,7 +3,7 @@ Prompts for Property-based Binary Partitioning (PBP) module.
 """
 
 import math
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Optional
 
 
 def build_property_prompt(descriptions: List[str], used_properties: List[str], category: str) -> str:
@@ -251,4 +251,44 @@ def build_fallback_selection_prompt(
     return template.format(
         candidates="\n".join(enumerated),
         dialogue=dialogue_str
+    )
+
+
+def build_noncompare_property_prompt(
+    category: str,
+    dialogue_history: List,
+    used_properties: List[str],
+    description: Optional[str] = None,
+) -> str:
+    """Attribute selection without candidate comparison (appendix ablation).
+    description=None: category + previous Q/A only ("No candidate information").
+    description=str: one candidate description + category + previous Q/A ("Single candidate").
+    The other candidates are never shown, and the prompt does not ask for a split."""
+    used_block = "None" if not used_properties else ", ".join(used_properties)
+    qa_lines = [f"- Does the target have [{item[0]}]? {item[1]}" for item in dialogue_history if len(item) >= 2]
+    qa_block = "\n".join(qa_lines) if qa_lines else "None"
+    if description is None:
+        head = (
+            f"A user has one specific [{category}] in mind.\n"
+            f"Task: Propose ONE property of the user's [{category}] to ask about with a yes/no question.\n"
+        )
+        desc_block = ""
+    else:
+        head = (
+            f"A user has one specific [{category}] in mind. You are given the description of one [{category}] the robot has found.\n"
+            f"Task: Propose ONE property of this [{category}] to ask the user about with a yes/no question "
+            f"(\"Does your [{category}] have this property?\").\n"
+        )
+        desc_block = f"Description:\n{description}\n\n"
+    return (
+        head
+        + "- The property should be based on visible appearance or nearby surrounding objects.\n"
+        + "- If a surrounding object is distinctive, explicitly name it.\n"
+        + "- The property should be specific but concise (no more than 10 words).\n"
+        + "- Write the property as a short phrase, not as a question.\n\n"
+        + desc_block
+        + f"Previous questions and answers about the user's [{category}]:\n{qa_block}\n\n"
+        + f"DO NOT USE the following properties: [{used_block}].\n"
+        + "Answer only in the following format:\n"
+        + "PROPERTY: <the property>"
     )

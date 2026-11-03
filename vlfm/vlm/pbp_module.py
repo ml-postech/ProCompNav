@@ -22,7 +22,8 @@ from vlfm.utils.pbp_prompts import (
     build_text_goal_candidate_yesno_prompt,
     build_mllm_property_prompt,
     build_yesno_property_prompt,
-    build_fallback_selection_prompt
+    build_fallback_selection_prompt,
+    build_noncompare_property_prompt,
 )
 from vlfm.vlm.server_wrapper import send_request
 
@@ -140,6 +141,19 @@ class PropertyBasedBinaryPartitioning:
         if self.nli_kmeans_modal not in ["text", "image", "image_text"]:
             raise ValueError(f"[PBP] Invalid NLI_kmeans_modal: {self.nli_kmeans_modal}. Allowed: ['text', 'image', 'image_text']")
         self.timeout = pbp_config.get('timeout', 60)
+        # Appendix ablation "Question Format and Candidate Comparison" (No candidate information):
+        # the attribute-value pair is proposed without comparing candidates, then every candidate is
+        # judged with the same NLI verifier and PAS threshold as ProCompNav (no group refinement).
+        self.noncompare_mode = str(pbp_config.get("stage2_method", "procompnav")).strip().lower()
+        self.noncompare = self.noncompare_mode == "no_candidate_info"
+        self.noncompare_max_regen = 5  # parse retries, same as max_same_property_streak
+        self.noncompare_forced_count = 0
+        self._noncompare_used_sources: Dict[int, List[int]] = {}
+        self._noncompare_ep_id = -1
+        if self.noncompare:
+            print(Fore.RED + "=" * 70)
+            print(Fore.RED + f"  [NONCOMPARE ABLATION] stage2_method = {self.noncompare_mode}")
+            print(Fore.RED + "=" * 70)
 
         env_port = os.environ.get("LLava_PORT")
         if env_port is None:
@@ -855,6 +869,59 @@ class PropertyBasedBinaryPartitioning:
         print(Fore.CYAN + f"[PBP][coin] Fact prefilter applied: {len(original_object_ids)} -> {len(current_object_ids)}")
         return current_object_ids, forced_status
 
+    def _propose_property_noncompare(
+        self,
+        candidates: Dict[int, Dict],
+        current_object_ids: List[int],
+        used_properties: List[str],
+        category: str,
+        curr_depth: int,
+    ) -> Optional[Dict[str, object]]:
+        """No candidate information ablation: one proposal per question, asked even if it splits nothing.
+        The LLM sees only the category and previous questions and answers.
+        Each candidate is then judged with NLI PAS >= pbp_refinement_thres so the answer can prune the pool.
+        Retries only on parse failures."""
+        ep_id = int(self._noncompare_ep_id)
+        history = list(self.vlm_oracle.pbp_dialogue_history.get(ep_id, []))
+        source_id = None
+        description = None
+        prompt = build_noncompare_property_prompt(category, history, used_properties, description)
+        llm_call_elapsed = 0.0
+        prop = None
+        for attempt in range(int(self.noncompare_max_regen)):
+            t0 = time.perf_counter()
+            prop = parse_property(self.llm_client.ask(prompt=prompt))
+            llm_call_elapsed += float(time.perf_counter() - t0)
+            if prop:
+                break
+            print(Fore.RED + f"[PBP][noncompare][{self.noncompare_mode}] INVALID_PARSE attempt={attempt + 1}")
+        if not prop:
+            print(Fore.RED + f"[PBP][noncompare][{self.noncompare_mode}] REGEN_GIVEUP (no parsable property)")
+            return None
+        # Same judge as ProCompNav: NLI PAS >= pbp_refinement_thres -> has the property.
+        pas = self._pas_scores(
+            nli_only_model=getattr(self, "nli_only_model", None),
+            nli_only_tokenizer=getattr(self, "nli_only_tokenizer", None),
+            captions=[candidates[obj_id]["description"] for obj_id in current_object_ids],
+            category=category,
+            prop=prop,
+        )
+        nli_pas = [{"object_id": int(obj_id), "pas": float(v)} for obj_id, v in zip(current_object_ids, pas)]
+        has_ids = [obj_id for obj_id, v in zip(current_object_ids, pas) if float(v) >= float(self.pbp_refinement_thres)]
+        lacks_ids = [obj_id for obj_id in current_object_ids if obj_id not in has_ids]
+        non_splitting = not (has_ids and lacks_ids)
+        if non_splitting:
+            self.noncompare_forced_count += 1
+        print(Fore.MAGENTA + f"[PBP][noncompare][{self.noncompare_mode}] Depth={curr_depth} source={source_id} "
+              f"prop='{prop}' has={has_ids} lacks={lacks_ids}" + (" UNCHECKED_NON_SPLITTING" if non_splitting else ""))
+        return {"prop": prop, "prop_group": "g1",
+                "g1_object_ids": has_ids, "g2_object_ids": lacks_ids,
+                "g1_props_list": [prop], "g2_props_list": [],
+                "g1_ranked_props": [], "g2_ranked_props": [],
+                "llm_call_elapsed_sec": llm_call_elapsed,
+                "noncompare_source_id": source_id, "noncompare_regen": 0,
+                "noncompare_forced": non_splitting, "nli_pas": nli_pas}
+
     def run(
         self,
         ep_id: int,
@@ -882,6 +949,7 @@ class PropertyBasedBinaryPartitioning:
         round_times_sec: List[float] = []
         depth_times_sec: List[float] = []
         depth_time_accum_sec = 0.0
+        self._noncompare_ep_id = ep_id
         
         # Initialize tracking
         current_object_ids = sorted(candidates.keys()) # [0, 1, 2, ..., N-1] (N candidates)
@@ -987,18 +1055,25 @@ class PropertyBasedBinaryPartitioning:
                     print(Fore.MAGENTA + f"[PBP][ROUND {rounds}] Extraction(coin): infer shared attributes from grouped captions.")
                 nli_only_model = getattr(self, "nli_only_model", None)
                 nli_only_tokenizer = getattr(self, "nli_only_tokenizer", None)
-                proposal_result = self._propose_property_with_nli(
-                    candidates=candidates,
-                    current_object_ids=current_object_ids,
-                    descriptions=descriptions,
-                    used_properties=used_properties,
-                    category=category,
-                    curr_depth=curr_depth,
-                    nli_only_model=nli_only_model,
-                    nli_only_tokenizer=nli_only_tokenizer,
-                    task_type=task_type,
-                    text_goal_property_candidates=text_goal_property_candidates,
-                )
+                if self.noncompare and task_type == "coin":
+                    print(Fore.YELLOW + f"[PBP][ablation] Attribute selection without candidate comparison ({self.noncompare_mode})")
+                    proposal_result = self._propose_property_noncompare(
+                        candidates=candidates, current_object_ids=current_object_ids,
+                        used_properties=used_properties, category=category, curr_depth=curr_depth,
+                    )
+                else:
+                    proposal_result = self._propose_property_with_nli(
+                        candidates=candidates,
+                        current_object_ids=current_object_ids,
+                        descriptions=descriptions,
+                        used_properties=used_properties,
+                        category=category,
+                        curr_depth=curr_depth,
+                        nli_only_model=nli_only_model,
+                        nli_only_tokenizer=nli_only_tokenizer,
+                        task_type=task_type,
+                        text_goal_property_candidates=text_goal_property_candidates,
+                    )
                 if proposal_result is None:
                     round_elapsed = float(time.perf_counter() - round_start)
                     round_times_sec.append(round_elapsed)
@@ -1046,38 +1121,50 @@ class PropertyBasedBinaryPartitioning:
                 g1_ranked_props = list(proposal_result["g1_ranked_props"])
                 g2_ranked_props = list(proposal_result["g2_ranked_props"])
 
-                refinement_result = self.group_refinement(
-                    candidates=candidates,
-                    category=category,
-                    prop=prop,
-                    prop_group=prop_group,
-                    g1_object_ids=g1_object_ids,
-                    g2_object_ids=g2_object_ids,
-                    g1_ranked_props=g1_ranked_props,
-                    g2_ranked_props=g2_ranked_props,
-                    nli_only_model=nli_only_model,
-                    nli_only_tokenizer=nli_only_tokenizer,
-                    task_type=task_type,
-                )
-                prop = str(refinement_result["prop"])
-                prop_group = str(refinement_result["prop_group"])
-                cohesive_object_ids = g1_object_ids if prop_group == "g1" else g2_object_ids
-                if task_type == "coin":
-                    yes_object_ids = list(refinement_result["yes_object_ids"])
-                    no_object_ids = list(refinement_result["no_object_ids"])
-                elif task_type == "text_goal":
-                    yes_object_ids = list(refinement_result["yes_object_ids"]) # Cohesive set containing property
-                    no_object_ids = list(refinement_result["no_object_ids"]) # Remainder set
-                refinement_before_groups = dict(refinement_result["refinement_before_groups"])
-                refinement_after_groups = dict(refinement_result["refinement_after_groups"])
-                if task_type == "coin":
-                    if prop_group == "g1":
-                        refinement_after_groups = {"g1_object_ids": yes_object_ids, "g2_object_ids": no_object_ids, "extracted_group": "g1"}
-                    else:
-                        refinement_after_groups = {"g1_object_ids": no_object_ids, "g2_object_ids": yes_object_ids, "extracted_group": "g2"}
-                refinement_pas = list(refinement_result["refinement_pas"])
-                mllm_refine_decision = list(refinement_result["mllm_refine_decision"])
-                refinement_change = bool(refinement_result["refinement_change"])
+                if "nli_pas" in proposal_result:
+                    # No-comparison ablation: the NLI judgment already split the pool, so refinement is skipped.
+                    # Keep the NLI PAS so cap / empty-side fallbacks pick by PAS like ProCompNav.
+                    yes_object_ids = g1_object_ids
+                    no_object_ids = g2_object_ids
+                    refinement_pas = list(proposal_result.get("nli_pas", []))
+                    refinement_before_groups = {"g1_object_ids": g1_object_ids, "g2_object_ids": g2_object_ids, "extracted_group": "g1"}
+                    refinement_after_groups = refinement_before_groups
+                    mllm_refine_decision = []
+                    refinement_change = False
+                    print(Fore.CYAN + f"[PBP][ablation] Refinement SKIPPED. yes={yes_object_ids}, no={no_object_ids}")
+                else:
+                    refinement_result = self.group_refinement(
+                        candidates=candidates,
+                        category=category,
+                        prop=prop,
+                        prop_group=prop_group,
+                        g1_object_ids=g1_object_ids,
+                        g2_object_ids=g2_object_ids,
+                        g1_ranked_props=g1_ranked_props,
+                        g2_ranked_props=g2_ranked_props,
+                        nli_only_model=nli_only_model,
+                        nli_only_tokenizer=nli_only_tokenizer,
+                        task_type=task_type,
+                    )
+                    prop = str(refinement_result["prop"])
+                    prop_group = str(refinement_result["prop_group"])
+                    cohesive_object_ids = g1_object_ids if prop_group == "g1" else g2_object_ids
+                    if task_type == "coin":
+                        yes_object_ids = list(refinement_result["yes_object_ids"])
+                        no_object_ids = list(refinement_result["no_object_ids"])
+                    elif task_type == "text_goal":
+                        yes_object_ids = list(refinement_result["yes_object_ids"]) # Cohesive set containing property
+                        no_object_ids = list(refinement_result["no_object_ids"]) # Remainder set
+                    refinement_before_groups = dict(refinement_result["refinement_before_groups"])
+                    refinement_after_groups = dict(refinement_result["refinement_after_groups"])
+                    if task_type == "coin":
+                        if prop_group == "g1":
+                            refinement_after_groups = {"g1_object_ids": yes_object_ids, "g2_object_ids": no_object_ids, "extracted_group": "g1"}
+                        else:
+                            refinement_after_groups = {"g1_object_ids": no_object_ids, "g2_object_ids": yes_object_ids, "extracted_group": "g2"}
+                    refinement_pas = list(refinement_result["refinement_pas"])
+                    mllm_refine_decision = list(refinement_result["mllm_refine_decision"])
+                    refinement_change = bool(refinement_result["refinement_change"])
 
                 log_item = {
                     "round": rounds,
@@ -1096,6 +1183,10 @@ class PropertyBasedBinaryPartitioning:
                     "refinement_before_groups": refinement_before_groups,
                     "refinement_after_groups": refinement_after_groups,
                 }
+                if "noncompare_regen" in proposal_result:
+                    log_item["noncompare_source_id"] = proposal_result.get("noncompare_source_id")
+                    log_item["noncompare_regen"] = int(proposal_result["noncompare_regen"])
+                    log_item["noncompare_forced"] = bool(proposal_result.get("noncompare_forced", False))
 
                 if task_type == "text_goal" and (len(yes_object_ids) == 0 or len(no_object_ids) == 0):
                     round_elapsed = float(time.perf_counter() - round_start)

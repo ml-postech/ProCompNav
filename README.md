@@ -248,7 +248,7 @@ With fewer GPUs, run the remaining invocations (the remaining `--shard0/--shard1
 | `--instance_grouping_method` | `dense_average_image_text` | How the current pool is split into a core set and a remainder |
 | `--min_num_instances_for_pbp_trigger` | auto (CoIN: 5, TextNav: 3) | Candidate-pool size N_min that starts the Recursive Comparison Stage |
 | `--trigger_step` | auto (CoIN: 400, TextNav: 600) | Step at which the Recursive Comparison Stage starts if the pool has not reached N_min |
-| `--stage2_method` | `procompnav` | Disambiguation after pool construction: `procompnav` (comparative judgment) or `pim` (Pooled Independent Matching baseline) |
+| `--stage2_method` | `procompnav` | Disambiguation after pool construction: `procompnav` (comparative judgment), `pim` (Pooled Independent Matching baseline), or `no_candidate_info` ("No candidate information" ablation, this branch) |
 
 ### Ablation options
 
@@ -276,6 +276,19 @@ The ablations in the appendix section "Question Format and Candidate Comparison"
 | `ablation/binary-pim` | `binary_pim` | Binary PIM: PIM with one yes/no attribute-value question per candidate |
 | `ablation/no-candidate-info` | `no_candidate_info` | "No candidate information": binary questions chosen from the category and previous answers only |
 | `ablation/single-candidate` | `single_candidate` | "Single candidate": binary questions chosen from one candidate description at a time |
+
+### "No candidate information" ablation (this branch)
+
+This is an attribute-selection ablation in the appendix section "Question Format and Candidate Comparison". It keeps ProCompNav's pool construction, binary questions, and four-question limit, and changes only how the attribute-value pair is chosen. Each binary question is proposed from the target category and the previous questions and answers only, like a game of twenty questions. No candidate description is shown. Previously asked attributes are listed in the prompt and must not be reused. The proposed attribute is asked even if it does not split the pool.
+
+Every candidate is then judged with the same NLI verifier and PAS threshold (0.9) as ProCompNav, and the answer prunes the inconsistent candidates. Group refinement is not applied. Filtering after re-exploration, PAS-based selection at the question limit, and the re-exploration and fallback rules are the same as in ProCompNav. CoIN-Bench only.
+
+```bash
+python run_experiments.py --task_type coin --split val_seen \
+    --vllm_gpu 0 --vision_gpu 1 \
+    --shard_size 70 --shard0 0 --shard1 1 \
+    --stage2_method no_candidate_info --eval_folder_name no_candidate_info_coin_val_seen
+```
 
 ---
 
